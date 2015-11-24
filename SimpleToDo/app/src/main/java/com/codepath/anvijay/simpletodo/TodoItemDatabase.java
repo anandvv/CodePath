@@ -31,8 +31,10 @@ public class TodoItemDatabase extends SQLiteOpenHelper {
     private static final String KEY_TODO_DUE_DATE = "dueDate";
     private static final String KEY_TODO_PRIORITY = "priority";
 
-
+    //database Singleton
     private static TodoItemDatabase sInstance;
+
+    private SQLiteDatabase mDb;
 
     public static synchronized TodoItemDatabase getInstance(Context context) {
         // Use the application context, which will ensure that you
@@ -99,7 +101,7 @@ public class TodoItemDatabase extends SQLiteOpenHelper {
         try {
 
             ContentValues values = new ContentValues();
-            values.put(KEY_TODO_ID, todo.id);
+            //values.put(KEY_TODO_ID, todo.id);
             values.put(KEY_TODO_TEXT, todo.text);
             //TODO: add a user defined due date
             values.put(KEY_TODO_DUE_DATE, "2015-11-19 15:24:10.123");

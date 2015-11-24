@@ -14,19 +14,19 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.SimpleCursorAdapter;
 import android.widget.Toast;
 
-import org.apache.commons.io.FileUtils;
-
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 public class ToDoActivity extends AppCompatActivity {
 
     ListView lvItems;
-    ArrayList<String> items;
-    ArrayAdapter<String> itemsAdapter;
+    ArrayList<Todo> items;
+    ArrayAdapter<Todo> itemsAdapter;
+    SimpleCursorAdapter adapter;
+    TodoItemDatabase dbHandler;
 
     private final int REQUEST_CODE = 20;
 
@@ -46,10 +46,14 @@ public class ToDoActivity extends AppCompatActivity {
             }
         });
 
+        //setup the database handler
+        dbHandler = TodoItemDatabase.getInstance(ToDoActivity.this);
+
         //get a handle to the listView
         lvItems = (ListView) findViewById(R.id.lvItems);
         readItems();
-        itemsAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, items);
+        itemsAdapter = new ArrayAdapter<Todo>(this, android.R.layout.simple_list_item_1, items);
+        
         lvItems.setAdapter(itemsAdapter);
 
         //setup the ListView Listeners
@@ -62,7 +66,8 @@ public class ToDoActivity extends AppCompatActivity {
         // REQUEST_CODE is defined above
         if (resultCode == RESULT_OK && requestCode == REQUEST_CODE) {
             // Extract name value from result extras
-            String editedItem = data.getExtras().getString("EditedItem");
+            Todo editedItem = new Todo();
+            editedItem.text = data.getExtras().getString("EditedItem");
             int position = data.getExtras().getInt("Position", 0);
 
             //put the edited item in the position in the arrarylist
@@ -71,7 +76,7 @@ public class ToDoActivity extends AppCompatActivity {
             writeItems();
 
             // Toast the name to display temporarily on screen
-            Toast.makeText(this, editedItem, Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, editedItem.text, Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -118,13 +123,15 @@ public class ToDoActivity extends AppCompatActivity {
     //method to add a new item
     public void onAddItem(View v){
         EditText etAddItem = (EditText) findViewById(R.id.editText);
-        String todoItem = etAddItem.getText().toString();
+        Todo todoItem = new Todo();
+        todoItem.text = etAddItem.getText().toString();
         items.add(todoItem);
         etAddItem.setText("");
         writeItems();
     }
 
     //read a file
+/*
     private void readItems(){
         File filesDir = getFilesDir();
         File todoFile = new File(filesDir, "todo.txt");
@@ -135,8 +142,26 @@ public class ToDoActivity extends AppCompatActivity {
             ex.printStackTrace();
         }
     }
+*/
+    //read items from the database
+    private void readItems() {
+        List<Todo> todoList = dbHandler.getAllTodos();
+        //when we run the program for the first time or when there are no items in the list
+        //create an empty ArrayList and return;
+        if(todoList.size() == 0) {
+            items = new ArrayList<Todo>();
+            return;
+        } else {
+            for (Todo item : todoList
+                    ) {
+                Todo todo = new Todo();
+                todo.text = item.text;
+                items.add(todo);
+            }
+        }
+    }
 
-    //write to a file
+    /*//write to a file
     private void writeItems(){
         File filesDir = getFilesDir();
         File todoFile = new File(filesDir, "todo.txt");
@@ -144,6 +169,21 @@ public class ToDoActivity extends AppCompatActivity {
             FileUtils.writeLines(todoFile, items);
         } catch (IOException ex){
             ex.printStackTrace();
+        }
+    }*/
+
+    //write to the database
+    private void writeItems(){
+        for (Todo item: items
+             ) {
+            //we need to populate two lists
+            //one list is for existing items that need to be updated
+            //the other list is for new items that need to be added
+            if(item.id == null) {
+                dbHandler.addTodo(item);
+            } else {
+                dbHandler.updateTodo(item);
+            }
         }
     }
 
